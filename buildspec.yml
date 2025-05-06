@@ -1,1 +1,44 @@
+version: 0.2
 
+phases:
+  install:
+    runtime-versions:
+      nodejs: 12
+      python: 3.8
+    commands:
+      - echo Installing system packages...
+      - apt-get update && apt-get install -y build-essential libssl-dev libffi-dev python3-dev libsasl2-dev libldap2-dev
+      - echo Installing pip and virtualenv...
+      - python3 -m pip install --upgrade pip
+      - pip install virtualenv
+      - echo Setting up virtual environment...
+      - virtualenv venv
+      - source venv/bin/activate
+      - echo Installing Python dependencies...
+      - pip install -r requirements.txt
+      - echo Installing Node dependencies...
+      - cd superset-frontend && npm install && cd ..
+
+  pre_build:
+    commands:
+      - echo Pre-build steps...
+      - source venv/bin/activate
+      - superset db upgrade
+
+  build:
+    commands:
+      - echo Running frontend build...
+      - cd superset-frontend
+      - npm run build
+      - cd ..
+      - echo Collecting static assets...
+      - superset collect
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+
+artifacts:
+  files:
+    - '**/*'
+  discard-paths: no
